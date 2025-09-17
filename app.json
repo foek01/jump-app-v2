@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.rork.sport-club-video-platform-1qmc3tpg-388jzzp9",
+      "bundleIdentifier": "com.foeks01.jumpsportclubvideoplatform",
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -26,7 +26,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.foeks01.sportclubvideoplatform1qmc3tpg388jzzp9"
+      "package": "com.foeks01.jumpsportclubvideoplatform"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
