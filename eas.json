@@ -8,23 +8,37 @@
       "developmentClient": true,
       "distribution": "internal",
       "ios": {
-        "simulator": true
+        "simulator": true,
+        "env": {
+          "RCT_NEW_ARCH_ENABLED": "0",
+          "EXPO_DEBUG": "1"
+        },
+        "node": "20.11.1"
       }
     },
     "preview": {
       "distribution": "internal",
       "ios": {
-        "simulator": false
+        "simulator": false,
+        "env": {
+          "RCT_NEW_ARCH_ENABLED": "0",
+          "EXPO_DEBUG": "1"
+        },
+        "node": "20.11.1"
       }
     },
     "production": {
       "autoIncrement": true,
       "ios": {
         "simulator": false,
-        "buildConfiguration": "Release"
-      },
-      "env": {
-        "NODE_ENV": "production"
+        "buildConfiguration": "Release",
+        "env": {
+          "NODE_ENV": "production",
+          "RCT_NEW_ARCH_ENABLED": "0",
+          "EXPO_DEBUG": "1",
+          "FASTLANE_DISABLE_COLORS": "1"
+        },
+        "node": "20.11.1"
       }
     }
   },
