@@ -1,4 +1,4 @@
-import * as Notifications from 'expo-notifications';
+// import * as Notifications from 'expo-notifications'; // Temporarily disabled
 import { Platform } from 'react-native';
 // Only import Firebase messaging on mobile platforms
 let messaging: any = null;

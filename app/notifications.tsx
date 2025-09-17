@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { ChevronLeft, Bell, BellOff, TestTube, Settings, Trash2 } from "lucide-react-native";
 import { notificationService } from "@/services/notificationService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Notifications from 'expo-notifications';
+// import * as Notifications from 'expo-notifications'; // Temporarily disabled
 
 interface Notification {
   id: string;
@@ -27,7 +27,7 @@ export default function NotificationsScreen() {
   // Load notifications from AsyncStorage
   useEffect(() => {
     loadNotifications();
-    setupNotificationListeners();
+    // setupNotificationListeners(); // Temporarily disabled
   }, []);
 
   const loadNotifications = async (): Promise<void> => {

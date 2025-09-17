@@ -44,15 +44,6 @@
         {
           "origin": "https://rork.com/"
         }
-      ],
-      [
-        "expo-notifications",
-        {
-          "color": "#ffffff",
-          "defaultChannel": "default",
-          "enableBackgroundRemoteNotifications": false,
-          "iosDisplayInForeground": true
-        }
       ]
     ],
     "experiments": {
