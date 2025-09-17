@@ -18,10 +18,7 @@
       "bundleIdentifier": "app.rork.sport-club-video-platform-1qmc3tpg-388jzzp9",
       "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "This app may use the camera for video features.",
-        "NSMicrophoneUsageDescription": "This app may use the microphone for video features.",
-        "NSPhotoLibraryUsageDescription": "This app may access your photo library to share images."
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -29,30 +26,18 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.foeks01.sportclubvideoplatform1qmc3tpg388jzzp9",
-      "permissions": [
-        "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.SCHEDULE_EXACT_ALARM"
-      ]
+      "package": "com.foeks01.sportclubvideoplatform1qmc3tpg388jzzp9"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      [
-        "expo-router",
-        {
-          "origin": "https://rork.com/"
-        }
-      ]
+      "expo-router"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "router": {
-        "origin": "https://rork.com/"
-      },
       "eas": {
         "projectId": "452b4c50-e129-44a9-8313-7f1054b21846"
       }
