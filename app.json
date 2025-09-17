@@ -16,8 +16,12 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.rork.sport-club-video-platform-1qmc3tpg-388jzzp9",
+      "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "This app may use the camera for video features.",
+        "NSMicrophoneUsageDescription": "This app may use the microphone for video features.",
+        "NSPhotoLibraryUsageDescription": "This app may access your photo library to share images."
       }
     },
     "android": {
@@ -50,7 +54,8 @@
           "sounds": [
             "./local/assets/notification_sound.wav"
           ],
-          "enableBackgroundRemoteNotifications": false
+          "enableBackgroundRemoteNotifications": false,
+          "iosDisplayInForeground": true
         }
       ]
     ],
