@@ -45,7 +45,7 @@ try {
         messaging = null;
       } else {
         // iOS/Android: Initialize messaging normally
-        messaging = getMessaging(app);
+        messaging = null;
         console.log('📱 Firebase messaging initialized for mobile platform');
       }
     } catch (error) {
