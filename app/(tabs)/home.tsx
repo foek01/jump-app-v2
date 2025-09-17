@@ -35,6 +35,13 @@ export default function HomeTab() {
     console.log('🎬 Shorts loaded:', shorts.length);
     console.log('📡 Live events:', liveEvents.length);
     console.log('🏟️ Selected clubs:', selectedClubs.length);
+    
+    // Debug shorts content
+    console.log('🎬 Shorts in home page:');
+    shorts.forEach((short, index) => {
+      console.log(`  ${index + 1}. ${short.title} (tags: ${short.tags?.join(', ') || 'none'})`);
+    });
+    
     return () => {
       console.log('🏠 HomeScreen unmounted');
     };

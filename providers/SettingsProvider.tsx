@@ -8,6 +8,7 @@ interface SettingsState {
   matchReminders: boolean;
   newsAlerts: boolean;
   startscreenClubId: string | null;
+  enableCache: boolean;
 }
 
 const DEFAULT_SETTINGS: SettingsState = {
@@ -16,6 +17,7 @@ const DEFAULT_SETTINGS: SettingsState = {
   matchReminders: true,
   newsAlerts: false,
   startscreenClubId: null,
+  enableCache: false, // Cache disabled by default for development
 };
 
 const SETTINGS_STORAGE_KEY = "@app_settings";

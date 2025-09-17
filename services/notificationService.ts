@@ -1,7 +1,21 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { messaging } from '@/config/firebase';
-import { getToken, onMessage } from 'firebase/messaging';
+// Only import Firebase messaging on mobile platforms
+let messaging: any = null;
+let getToken: any = null;
+let onMessage: any = null;
+
+if (Platform.OS !== 'web') {
+  try {
+    const firebase = require('@/config/firebase');
+    const firebaseMessaging = require('firebase/messaging');
+    messaging = firebase.messaging;
+    getToken = firebaseMessaging.getToken;
+    onMessage = firebaseMessaging.onMessage;
+  } catch (error) {
+    console.warn('⚠️ Firebase messaging not available:', error.message);
+  }
+}
 
 // Configure notification behavior
 Notifications.setNotificationHandler({

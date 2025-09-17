@@ -20,6 +20,7 @@ import { LiveEvent } from "@/types/club";
 import { AccessControlService } from "@/services/accessControlService";
 import { VideoAccessOverlay } from "@/components/VideoAccessOverlay";
 import { useFavorites } from "@/providers/FavoritesProvider";
+import { NotificationTester } from "@/components/NotificationTester";
 
 const CARD_MARGIN = 10;
 
@@ -60,8 +61,7 @@ function LiveIndicator() {
   );
 }
 
-function LiveEventCard({ liveEvent, cardWidth, userInfo }: { liveEvent: LiveEvent; cardWidth: number; userInfo: any }) {
-  const router = useRouter();
+function LiveEventCard({ liveEvent, cardWidth, userInfo, router }: { liveEvent: LiveEvent; cardWidth: number; userInfo: any; router: any }) {
   const { isVideoLiked, toggleVideoLike } = useFavorites();
   
   // Check if live event is liked (treat as video)
@@ -93,12 +93,34 @@ function LiveEventCard({ liveEvent, cardWidth, userInfo }: { liveEvent: LiveEven
     // If no access, redirect to login
     if (!accessInfo.canAccess) {
       console.log('❌ Access denied, redirecting to login');
-      router.push('/login');
+      try {
+        router.push('/login');
+      } catch (error) {
+        console.error('❌ Router push failed, trying replace:', error);
+        router.replace('/login');
+      }
       return;
     }
     
     // Navigate to video player with the live event
-    router.push(`/video-player?videoId=${liveEvent.id}&isLive=true`);
+    const targetUrl = `/video-player?videoId=${liveEvent.id}&isLive=true`;
+    console.log('🚀 Navigating to:', targetUrl);
+    
+    try {
+      router.push(targetUrl);
+      console.log('✅ Navigation successful');
+    } catch (error) {
+      console.error('❌ Router push failed, trying replace:', error);
+      try {
+        router.replace(targetUrl);
+      } catch (replaceError) {
+        console.error('❌ Router replace also failed:', replaceError);
+        // Fallback: try window navigation on web
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.location.href = targetUrl;
+        }
+      }
+    }
   };
   
   const handleLockPress = () => {
@@ -196,6 +218,7 @@ function LiveEventCard({ liveEvent, cardWidth, userInfo }: { liveEvent: LiveEven
 export default function MatchesScreen() {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = screenWidth * 0.85;
+  const router = useRouter();
   
   const { liveEvents, isLoading, error, refreshContent } = useVideos();
   const { isAuthenticated, user } = useAuth();
@@ -276,7 +299,7 @@ export default function MatchesScreen() {
             <Text style={styles.sectionTitle}>Nu Live</Text>
             <View style={styles.verticalList}>
               {currentLiveEvents.map((liveEvent) => (
-                <LiveEventCard key={liveEvent.id} liveEvent={liveEvent} cardWidth={screenWidth - 40} userInfo={userInfo} />
+                <LiveEventCard key={liveEvent.id} liveEvent={liveEvent} cardWidth={screenWidth - 40} userInfo={userInfo} router={router} />
               ))}
             </View>
           </View>
@@ -287,7 +310,7 @@ export default function MatchesScreen() {
             <Text style={styles.sectionTitle}>Binnenkort</Text>
             <View style={styles.verticalList}>
               {upcomingLiveEvents.map((liveEvent) => (
-                <LiveEventCard key={liveEvent.id} liveEvent={liveEvent} cardWidth={screenWidth - 40} userInfo={userInfo} />
+                <LiveEventCard key={liveEvent.id} liveEvent={liveEvent} cardWidth={screenWidth - 40} userInfo={userInfo} router={router} />
               ))}
             </View>
           </View>

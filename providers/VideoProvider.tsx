@@ -5,7 +5,7 @@ import { useClubs } from '@/providers/ClubProvider';
 import { Video, LiveEvent } from '@/types/club';
 import { mockVideos, mockShorts, mockLiveEvents } from '@/mocks/videos';
 
-// Filter function to hide premium content
+// Filter function to hide premium content (simplified for now)
 const filterOutPremiumContent = (items: any[]) => {
   return items.filter(item => {
     // Hide premium content completely
@@ -16,7 +16,34 @@ const filterOutPremiumContent = (items: any[]) => {
     return true;
   });
 };
+
+// Filter function specifically for shorts
+const filterShortsOnly = (items: any[]) => {
+  return items.filter(item => {
+    // Only include items with 'short' tag
+    const hasShortTag = item.tags && item.tags.includes('short');
+    if (!hasShortTag) {
+      console.log(`🚫 Excluding non-short content: ${item.title}`);
+      return false;
+    }
+    return true;
+  });
+};
+
+// Filter function specifically for h-video tagged videos
+const filterHVideoOnly = (items: any[]) => {
+  return items.filter(item => {
+    // Only include items with 'h-video' tag
+    const hasHVideoTag = item.tags && item.tags.includes('h-video');
+    if (!hasHVideoTag) {
+      console.log(`🚫 Excluding non-h-video content: ${item.title}`);
+      return false;
+    }
+    return true;
+  });
+};
 import CacheService from '@/services/cacheService';
+import { useSettings } from '@/providers/SettingsProvider';
 
 interface VideoState {
   videos: Video[];
@@ -36,6 +63,7 @@ interface VideoState {
 
 export const [VideoProvider, useVideos] = createContextHook<VideoState>(() => {
   const { clubs, selectedClubs } = useClubs();
+  const { settings } = useSettings();
   const [videos, setVideos] = useState<Video[]>([]);
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
   const [shorts, setShorts] = useState<Video[]>([]);
@@ -58,8 +86,8 @@ export const [VideoProvider, useVideos] = createContextHook<VideoState>(() => {
     // TEMPORARY: Always use mock data due to CORS issues
     console.log('📺 Using mock data due to CORS issues with API');
     
-    // Try to get from cache first (unless it's a refresh)
-    if (!isRefresh && selectedClubs.length > 0) {
+    // Try to get from cache first (unless it's a refresh or cache is disabled)
+    if (!isRefresh && selectedClubs.length > 0 && settings.enableCache) {
       try {
         console.log('🔍 Checking cache for video content...');
         
@@ -85,9 +113,11 @@ export const [VideoProvider, useVideos] = createContextHook<VideoState>(() => {
 
     console.log('🔄 Loading fresh mock data...');
     
-    // Filter out premium content
-    const filteredVideos = filterOutPremiumContent(mockVideos);
-    const filteredShorts = filterOutPremiumContent(mockShorts);
+    // Filter out premium content and ensure shorts are real shorts, videos are h-video only
+    const premiumFilteredVideos = filterOutPremiumContent(mockVideos);
+    const filteredVideos = filterHVideoOnly(premiumFilteredVideos);
+    const premiumFilteredShorts = filterOutPremiumContent(mockShorts);
+    const filteredShorts = filterShortsOnly(premiumFilteredShorts);
     const filteredLiveEvents = filterOutPremiumContent(mockLiveEvents);
     
     console.log(`📊 Content after premium filtering:`);
@@ -101,8 +131,8 @@ export const [VideoProvider, useVideos] = createContextHook<VideoState>(() => {
     setIsLoading(false);
     setError(null);
 
-    // Cache the mock data for future use
-    if (selectedClubs.length > 0) {
+    // Cache the mock data for future use (only if cache is enabled)
+    if (selectedClubs.length > 0 && settings.enableCache) {
       try {
         await Promise.all([
           CacheService.cacheVideos(selectedClubs, mockVideos, 'videos'),
@@ -120,9 +150,11 @@ export const [VideoProvider, useVideos] = createContextHook<VideoState>(() => {
     if (apiEnabledClubs.length === 0) {
       console.log('📺 No API-enabled clubs selected, using mock data');
       
-      // Filter out premium content
-      const filteredVideos = filterOutPremiumContent(mockVideos);
-      const filteredShorts = filterOutPremiumContent(mockShorts);
+      // Filter out premium content and ensure shorts are real shorts, videos are h-video only
+      const premiumFilteredVideos = filterOutPremiumContent(mockVideos);
+      const filteredVideos = filterHVideoOnly(premiumFilteredVideos);
+      const premiumFilteredShorts = filterOutPremiumContent(mockShorts);
+      const filteredShorts = filterShortsOnly(premiumFilteredShorts);
       const filteredLiveEvents = filterOutPremiumContent(mockLiveEvents);
       
       setVideos(filteredVideos);
@@ -246,9 +278,11 @@ export const [VideoProvider, useVideos] = createContextHook<VideoState>(() => {
       if (isRefresh || videos.length === 0) {
         console.log('🔄 Using mock data as fallback');
         
-        // Filter out premium content
-        const filteredVideos = filterOutPremiumContent(mockVideos);
-        const filteredShorts = filterOutPremiumContent(mockShorts);
+        // Filter out premium content and ensure shorts are real shorts, videos are h-video only
+        const premiumFilteredVideos = filterOutPremiumContent(mockVideos);
+        const filteredVideos = filterHVideoOnly(premiumFilteredVideos);
+        const premiumFilteredShorts = filterOutPremiumContent(mockShorts);
+        const filteredShorts = filterShortsOnly(premiumFilteredShorts);
         
         setVideos(filteredVideos);
         setShorts(filteredShorts);
@@ -257,7 +291,7 @@ export const [VideoProvider, useVideos] = createContextHook<VideoState>(() => {
     } finally {
       setIsLoading(false);
     }
-  }, [apiEnabledClubs, currentPage, videos.length]);
+  }, [apiEnabledClubs, currentPage, videos.length, settings.enableCache]);
 
   // Initial load
   useEffect(() => {

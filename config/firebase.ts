@@ -37,8 +37,20 @@ try {
     db = getFirestore(app);
     
     // Initialize messaging only on web platform
-    if (Platform.OS === 'web') {
-      messaging = getMessaging(app);
+    // Initialize Firebase Messaging
+    try {
+      if (Platform.OS === 'web') {
+        // Web: Skip messaging due to browser compatibility issues
+        console.log('🌐 Firebase messaging disabled on web for browser compatibility');
+        messaging = null;
+      } else {
+        // iOS/Android: Initialize messaging normally
+        messaging = getMessaging(app);
+        console.log('📱 Firebase messaging initialized for mobile platform');
+      }
+    } catch (error) {
+      console.warn('⚠️ Firebase messaging initialization failed:', error.message);
+      messaging = null;
     }
     
     console.log('Firebase initialized successfully');

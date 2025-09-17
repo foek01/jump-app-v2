@@ -15,14 +15,17 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.rork.sport-club-video-platform-1qmc3tpg-388jzzp9"
+      "bundleIdentifier": "app.rork.sport-club-video-platform-1qmc3tpg-388jzzp9",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.sport-club-video-platform-1qmc3tpg-388jzzp9",
+      "package": "com.foeks01.sportclubvideoplatform1qmc3tpg388jzzp9",
       "permissions": [
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.SCHEDULE_EXACT_ALARM"
@@ -53,6 +56,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://rork.com/"
+      },
+      "eas": {
+        "projectId": "452b4c50-e129-44a9-8313-7f1054b21846"
+      }
     }
   }
 }

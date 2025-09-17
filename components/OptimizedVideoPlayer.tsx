@@ -1,20 +1,58 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
+import { WebView } from 'react-native-webview';
+import { Video, ResizeMode } from 'expo-av';
 
 interface OptimizedVideoPlayerProps {
   videoUrl?: string;
   streamUrl?: string;
+  media_id?: string;
+  autoplay?: boolean;
+  loop?: boolean;
+  muted?: boolean;
+  controls?: boolean;
+  isShort?: boolean;
   style?: any;
 }
 
 export const OptimizedVideoPlayer: React.FC<OptimizedVideoPlayerProps> = ({
   videoUrl,
   streamUrl,
+  media_id,
+  autoplay = true,
+  loop = false,
+  muted = false,
+  controls = true,
+  isShort = false,
   style,
 }) => {
   const url = videoUrl || streamUrl;
   
-  if (!url) return null;
+  // Create direct JW Player media URLs from media_id if available
+  const getJWPlayerUrl = (mediaId: string, format: 'hls' | 'mp4' = 'hls') => {
+    if (format === 'mp4') {
+      return `https://cdn.jwplayer.com/videos/${mediaId}.mp4`;
+    }
+    return `https://cdn.jwplayer.com/manifests/${mediaId}.m3u8`;
+  };
+
+  // For now, disable direct media and use original URLs to avoid white screen
+  // TODO: Re-enable when JW Player direct URLs are confirmed working
+  const finalUrl = url; // Use original URL for now
+  const fallbackUrl = media_id ? getJWPlayerUrl(media_id, 'hls') : null; // Keep for future use
+  const useDirectMedia = false; // Temporarily disabled
+  
+  if (__DEV__) {
+    console.log('🎬 OptimizedVideoPlayer:', {
+      media_id,
+      useDirectMedia,
+      originalUrl: url,
+      finalUrl,
+      fallbackUrl,
+    });
+  }
+  
+  if (!finalUrl) return null;
 
   // Optimize URL for video-only display
   const getOptimizedUrl = (originalUrl: string) => {
@@ -43,14 +81,39 @@ export const OptimizedVideoPlayer: React.FC<OptimizedVideoPlayerProps> = ({
         optimizedParams.set('et', params.get('et')!);
       }
       
-      // Set only essential video parameters
-      optimizedParams.set('autoplay', '1');
-      optimizedParams.set('controls', '1');
+      // Set video parameters based on props
+      if (autoplay) optimizedParams.set('autoplay', '1');
+      if (controls) optimizedParams.set('controls', '1');
+      if (loop) optimizedParams.set('loop', '1');
+      if (muted) optimizedParams.set('muted', '1');
       
-      // Preserve specific existing parameters
-      if (params.has('loop')) optimizedParams.set('loop', params.get('loop')!);
-      if (params.has('muted')) optimizedParams.set('muted', params.get('muted')!);
-      if (params.has('fit')) optimizedParams.set('fit', params.get('fit')!);
+      // Add parameters to show only the video player, not the full website
+      optimizedParams.set('minimal', '1');        // Minimal UI
+      optimizedParams.set('nofullscreen', '1');   // No fullscreen button
+      optimizedParams.set('noshare', '1');        // No share button
+      optimizedParams.set('nocomments', '1');     // No comments
+      optimizedParams.set('norelated', '1');      // No related videos
+      optimizedParams.set('nologo', '1');         // No logo overlay
+      optimizedParams.set('playeronly', '1');     // Player only mode
+      optimizedParams.set('embed', '1');          // Embed mode
+      
+      // Add media_id for JW Player custom design
+      if (media_id) {
+        optimizedParams.set('media_id', media_id);
+        optimizedParams.set('player_id', media_id);  // Alternative parameter name
+      }
+      
+      // For shorts, add specific parameters
+      if (isShort) {
+        optimizedParams.set('loop', '1');
+        optimizedParams.set('muted', '1');
+        optimizedParams.set('controls', '0');
+        optimizedParams.set('fit', 'cover');
+        optimizedParams.set('autostart', '1');    // Auto start for shorts
+      }
+      
+      // Preserve specific existing parameters if not overridden
+      if (params.has('fit') && !isShort) optimizedParams.set('fit', params.get('fit')!);
       
       const optimizedUrl = `${baseUrl}?${optimizedParams.toString()}`;
       if (__DEV__) {
@@ -69,6 +132,50 @@ export const OptimizedVideoPlayer: React.FC<OptimizedVideoPlayerProps> = ({
   };
 
   if (Platform.OS === 'web') {
+    // Use HTML5 video for direct media files (MP4/HLS)
+    if (useDirectMedia) {
+      return (
+        <div style={{ 
+          width: '100%', 
+          height: '100%', 
+          position: 'relative',
+          backgroundColor: '#000',
+          borderRadius: '8px',
+          overflow: 'hidden',
+          ...style 
+        }}>
+          <video
+            src={finalUrl}
+            controls={controls}
+            autoPlay={autoplay}
+            loop={loop}
+            muted={muted}
+            style={{
+              width: '100%',
+              height: '100%',
+              borderRadius: '8px',
+              objectFit: 'contain',
+            }}
+            onError={(e) => {
+              if (__DEV__) {
+                console.error('❌ Direct media error:', e);
+                if (fallbackUrl) {
+                  console.log('🔄 Could try HLS fallback:', fallbackUrl);
+                }
+              }
+            }}
+            onLoadStart={() => {
+              if (__DEV__) console.log('🔄 Direct media loading started');
+            }}
+            onLoadedData={() => {
+              if (__DEV__) console.log('✅ Direct media loaded successfully');
+            }}
+          />
+        </div>
+      );
+    }
+
+    // Fallback to iframe for embed URLs
     return (
       <div style={{ 
         width: '100%', 
@@ -80,7 +187,7 @@ export const OptimizedVideoPlayer: React.FC<OptimizedVideoPlayerProps> = ({
         ...style 
       }}>
         <iframe
-          src={getOptimizedUrl(url)}
+          src={getOptimizedUrl(finalUrl)}
           style={{
             width: '100%',
             height: '100%',
@@ -89,22 +196,153 @@ export const OptimizedVideoPlayer: React.FC<OptimizedVideoPlayerProps> = ({
             top: 0,
             left: 0,
             borderRadius: '8px',
+            objectFit: 'cover',
           }}
-          allow="autoplay; fullscreen; encrypted-media; accelerometer; gyroscope; picture-in-picture"
+          allow="autoplay; fullscreen; encrypted-media; accelerometer; gyroscope; picture-in-picture; web-share"
           allowFullScreen
-          title="Video Player"
+          title="JW Video Player"
           frameBorder="0"
           scrolling="no"
           seamless
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
         />
       </div>
     );
   }
 
-  // For React Native, you would use WebView here
+  // For React Native, use expo-av Video for direct media files, WebView for embed URLs
+  if (useDirectMedia) {
+    return (
+      <View style={[styles.container, style]}>
+        <Video
+          style={{ flex: 1 }}
+          source={{ uri: finalUrl }}
+          useNativeControls={controls}
+          resizeMode={ResizeMode.CONTAIN}
+          shouldPlay={autoplay}
+          isLooping={loop}
+          isMuted={muted}
+          onError={(error) => {
+            if (__DEV__) {
+              console.error('❌ Direct media error:', error);
+              if (fallbackUrl) {
+                console.log('🔄 Trying HLS fallback:', fallbackUrl);
+                // Could implement fallback logic here
+              }
+            }
+          }}
+          onLoad={() => {
+            if (__DEV__) console.log('✅ Direct media loaded successfully');
+          }}
+          onLoadStart={() => {
+            if (__DEV__) console.log('🔄 Direct media loading started');
+          }}
+        />
+      </View>
+    );
+  }
+
+  // Fallback to WebView for embed URLs
   return (
     <View style={[styles.container, style]}>
-      {/* WebView implementation for React Native */}
+      <WebView
+        source={{ uri: getOptimizedUrl(finalUrl) }}
+        style={{ flex: 1 }}
+        allowsFullscreenVideo={true}
+        allowsInlineMediaPlayback={true}
+        mediaPlaybackRequiresUserAction={false}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        startInLoadingState={true}
+        scalesPageToFit={false}
+        scrollEnabled={false}
+        bounces={false}
+        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
+        // Enhanced settings for video playback
+        allowsLinkPreview={false}
+        allowsBackForwardNavigationGestures={false}
+        // Inject JavaScript for better video control and hide website elements
+        injectedJavaScript={isShort ? `
+          // Hide website elements and show only JW Player for shorts
+          setTimeout(() => {
+            // Hide navigation, headers, footers, etc.
+            const elementsToHide = ['nav', 'header', 'footer', '.navbar', '.menu', '.sidebar', '.comments', '.related'];
+            elementsToHide.forEach(selector => {
+              const elements = document.querySelectorAll(selector);
+              elements.forEach(el => el.style.display = 'none');
+            });
+            
+            // Focus on JW Player container
+            const jwPlayer = document.querySelector('.jw-wrapper, .jw-media, .jwplayer, [id*="jwplayer"]');
+            if (jwPlayer) {
+              jwPlayer.style.position = 'fixed';
+              jwPlayer.style.top = '0';
+              jwPlayer.style.left = '0';
+              jwPlayer.style.width = '100vw';
+              jwPlayer.style.height = '100vh';
+              jwPlayer.style.zIndex = '9999';
+              jwPlayer.style.backgroundColor = '#000';
+            }
+            
+            // Auto-loop and mute for shorts
+            const videos = document.querySelectorAll('video');
+            videos.forEach(video => {
+              video.loop = true;
+              video.muted = true;
+              video.autoplay = true;
+              video.playsInline = true;
+              video.addEventListener('ended', () => {
+                video.currentTime = 0;
+                video.play();
+              });
+            });
+          }, 1000);
+          true;
+        ` : `
+          // Hide website elements and show only JW Player for regular videos
+          setTimeout(() => {
+            // Hide navigation, headers, footers, etc.
+            const elementsToHide = ['nav', 'header', 'footer', '.navbar', '.menu', '.sidebar', '.comments', '.related'];
+            elementsToHide.forEach(selector => {
+              const elements = document.querySelectorAll(selector);
+              elements.forEach(el => el.style.display = 'none');
+            });
+            
+            // Focus on JW Player container
+            const jwPlayer = document.querySelector('.jw-wrapper, .jw-media, .jwplayer, [id*="jwplayer"]');
+            if (jwPlayer) {
+              jwPlayer.style.position = 'fixed';
+              jwPlayer.style.top = '0';
+              jwPlayer.style.left = '0';
+              jwPlayer.style.width = '100vw';
+              jwPlayer.style.height = '100vh';
+              jwPlayer.style.zIndex = '9999';
+              jwPlayer.style.backgroundColor = '#000';
+            }
+            
+            // Standard video settings
+            const videos = document.querySelectorAll('video');
+            videos.forEach(video => {
+              video.autoplay = ${autoplay};
+              video.loop = ${loop};
+              video.muted = ${muted};
+              video.playsInline = true;
+            });
+          }, 1000);
+          true;
+        `}
+        onError={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.error('WebView error:', nativeEvent);
+        }}
+        onLoadStart={() => {
+          if (__DEV__) console.log('📱 WebView loading started');
+        }}
+        onLoadEnd={() => {
+          if (__DEV__) console.log('📱 WebView loading completed');
+        }}
+      />
     </View>
   );
 };

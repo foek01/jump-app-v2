@@ -216,6 +216,23 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Cache & Data</Text>
           
+          <View style={styles.settingItem}>
+            <View style={styles.settingLeft}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>Cache Inschakelen</Text>
+                <Text style={styles.settingDescription}>
+                  Cache aan = sneller laden, cache uit = altijd verse data van API
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={settings.enableCache}
+              onValueChange={(value) => updateSetting('enableCache', value)}
+              trackColor={{ false: "#333", true: "#C4FF00" }}
+              thumbColor="#FFF"
+            />
+          </View>
+          
           <TouchableOpacity 
             style={styles.settingItem}
             onPress={handleRefreshData}

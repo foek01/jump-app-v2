@@ -11,20 +11,42 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useFavorites } from "@/providers/FavoritesProvider";
-import { mockVideos, mockShorts } from "@/mocks/videos";
+import { useVideos } from "@/providers/VideoProvider";
 import { mockNews } from "@/mocks/news";
 import { Play } from "lucide-react-native";
 
 export default function FavoritesScreen() {
   const { likedVideos, likedShorts, likedNews } = useFavorites();
+  const { videos, liveEvents, shorts } = useVideos();
   
-  const favoriteVideos = mockVideos.filter(video => likedVideos.has(video.id));
-  const favoriteShorts = mockShorts.filter(short => likedShorts.has(short.id));
+  // Combine regular videos and live events for favorites (use current filtered data)
+  const allVideos = [...videos, ...liveEvents];
+  const favoriteVideos = allVideos.filter(video => likedVideos.has(video.id));
+  const favoriteShorts = shorts.filter(short => likedShorts.has(short.id));
   const favoriteNews = mockNews.filter(article => likedNews.has(article.id));
+  
+  console.log('💜 Favorites Debug:', {
+    likedVideoIds: Array.from(likedVideos),
+    likedShortIds: Array.from(likedShorts),
+    allVideosCount: allVideos.length,
+    favoriteVideosCount: favoriteVideos.length,
+    favoriteVideos: favoriteVideos.map(v => ({ id: v.id, title: v.title }))
+  });
   
   const handleVideoPress = (videoId: string) => {
     console.log('🎥 Opening favorite video:', videoId);
-    router.push(`/video-player?videoId=${videoId}` as any);
+    
+    // Check if it's a live event (has streamUrl instead of videoUrl)
+    const item = allVideos.find(v => v.id === videoId);
+    const isLiveEvent = item && ('streamUrl' in item || 'startTime' in item);
+    
+    if (isLiveEvent) {
+      console.log('🔴 Opening as live event');
+      router.push(`/video-player?videoId=${videoId}&isLive=true` as any);
+    } else {
+      console.log('🎥 Opening as regular video');
+      router.push(`/video-player?videoId=${videoId}` as any);
+    }
   };
   
   const handleShortPress = (shortId: string) => {

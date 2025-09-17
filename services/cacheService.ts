@@ -9,7 +9,7 @@ interface CacheData {
 
 class CacheService {
   private static readonly CACHE_PREFIX = '@cache_';
-  private static readonly DEFAULT_EXPIRY = 5 * 60 * 1000; // 5 minutes
+  private static readonly DEFAULT_EXPIRY = 1 * 60 * 1000; // 1 minute for faster updates
 
   // Memory cache for faster access
   private static memoryCache = new Map<string, CacheData>();
@@ -129,8 +129,8 @@ class CacheService {
     type: 'shorts' | 'videos' = 'videos'
   ): Promise<void> {
     const key = this.getVideoCacheKey(clubIds, type);
-    // Videos cache for 10 minutes
-    await this.set(key, videos, 10 * 60 * 1000);
+    // Videos cache for 1 minute for faster updates
+    await this.set(key, videos, 1 * 60 * 1000);
   }
 
   /**
@@ -149,8 +149,8 @@ class CacheService {
    */
   static async cacheLiveEvents(clubIds: string[], events: LiveEvent[]): Promise<void> {
     const key = this.getVideoCacheKey(clubIds, 'live');
-    // Live events cache for 2 minutes (more dynamic)
-    await this.set(key, events, 2 * 60 * 1000);
+    // Live events cache for 30 seconds (more dynamic)
+    await this.set(key, events, 30 * 1000);
   }
 
   /**

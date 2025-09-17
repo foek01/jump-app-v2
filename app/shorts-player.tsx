@@ -16,6 +16,7 @@ import { ArrowLeft, Heart, Share } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { mockShorts } from '@/mocks/videos';
 import { useFavorites } from '@/providers/FavoritesProvider';
+import { OptimizedVideoPlayer } from '@/components/OptimizedVideoPlayer';
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,6 +26,7 @@ interface Short {
   date: string;
   thumbnail: string;
   videoUrl?: string;
+  media_id?: string;
 }
 
 export default function ShortsPlayer() {
@@ -52,22 +54,36 @@ export default function ShortsPlayer() {
 
   const handleShare = async (short: Short) => {
     console.log('📤 Share pressed for short:', short.title);
+    
+    // App download links
+    const appStoreUrl = 'https://apps.apple.com/app/sport-club-video-platform'; // TODO: Add real App Store URL
+    const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.sportclub.video'; // TODO: Add real Play Store URL
+    const webAppUrl = 'https://sportclub.app'; // TODO: Add real web app URL
+    
+    const shareContent = {
+      title: `🏆 Sport Club Video Platform`,
+      message: `🎬 Bekijk "${short.title}" en meer content in onze app!\n\n📱 Download de app:\niOS: ${appStoreUrl}\nAndroid: ${playStoreUrl}\nWeb: ${webAppUrl}`,
+    };
+    
     try {
       if (Platform.OS === 'web') {
         if (navigator.share) {
           await navigator.share({
-            title: short.title,
-            text: `Check out this short: ${short.title}`,
-            url: window.location.href,
+            title: shareContent.title,
+            text: shareContent.message,
+            url: webAppUrl,
           });
         } else {
-          console.log('📤 Web share not supported, copying to clipboard');
+          // Fallback: copy to clipboard
+          await navigator.clipboard.writeText(`${shareContent.title}\n${shareContent.message}`);
+          console.log('📋 App download info copied to clipboard');
         }
       } else {
         await RNShare.share({
-          title: short.title,
-          message: `Check out this short: ${short.title}`,
-          url: short.thumbnail,
+          title: shareContent.title,
+          message: shareContent.message,
+          // Add app store URLs for mobile
+          urls: Platform.OS === 'ios' ? [appStoreUrl] : [playStoreUrl],
         });
       }
     } catch (error) {
@@ -119,26 +135,22 @@ export default function ShortsPlayer() {
 
   const renderShort = ({ item, index }: { item: Short; index: number }) => (
     <View style={styles.shortContainer}>
-      {Platform.OS === 'web' ? (
-        <iframe
-          src={getShortEmbedUrl(item)}
-          style={{
-            width: '100%',
-            height: '100%',
-            border: 'none',
-            objectFit: 'cover',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            borderRadius: '10px',
-          }}
-          allow="autoplay; fullscreen; encrypted-media; camera; microphone"
-          allowFullScreen
-          sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-        />
-      ) : (
-        <Image source={{ uri: item.thumbnail }} style={styles.video} />
-      )}
+      <OptimizedVideoPlayer
+        videoUrl={item.videoUrl}
+        media_id={item.media_id}
+        autoplay={true}
+        loop={true}
+        muted={true}
+        controls={false}
+        isShort={true}
+        style={{
+          width: '100%',
+          height: '100%',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+        }}
+      />
       
       {/* Video overlay gradient */}
       <View style={styles.overlay} />
@@ -176,7 +188,57 @@ export default function ShortsPlayer() {
 
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
-      setCurrentIndex(viewableItems[0].index);
+      const newIndex = viewableItems[0].index;
+      const currentItem = viewableItems[0].item;
+      setCurrentIndex(newIndex);
+      
+      // Auto-play when swiping to new video
+      console.log('🎬 Swiped to short:', newIndex, currentItem?.title);
+      
+      // Pause all videos first, then play the current one
+      setTimeout(() => {
+        if (Platform.OS === 'web') {
+          // Find all video elements in iframes and direct videos
+          const videos = document.querySelectorAll('video');
+          const iframes = document.querySelectorAll('iframe');
+          
+          console.log(`🎬 Found ${videos.length} videos and ${iframes.length} iframes`);
+          
+          // Handle direct video elements
+          videos.forEach((video, index) => {
+            if (index === newIndex) {
+              video.currentTime = 0;
+              video.muted = true;
+              video.loop = true;
+              video.play().catch(e => console.log('Autoplay prevented:', e));
+              console.log('▶️ Playing direct video at index:', index);
+            } else {
+              video.pause();
+              console.log('⏸️ Paused direct video at index:', index);
+            }
+          });
+          
+          // Handle iframe videos (JW Player)
+          iframes.forEach((iframe, index) => {
+            try {
+              const iframeWindow = iframe.contentWindow;
+              if (iframeWindow) {
+                if (index === newIndex) {
+                  // Send play command to iframe
+                  iframeWindow.postMessage({action: 'play'}, '*');
+                  console.log('▶️ Playing iframe video at index:', index);
+                } else {
+                  // Send pause command to iframe
+                  iframeWindow.postMessage({action: 'pause'}, '*');
+                  console.log('⏸️ Paused iframe video at index:', index);
+                }
+              }
+            } catch (e) {
+              console.log('Cannot control iframe video:', e);
+            }
+          });
+        }
+      }, 200);
     }
   }).current;
 
@@ -204,15 +266,15 @@ export default function ShortsPlayer() {
         keyExtractor={(item) => item.id}
         pagingEnabled
         showsVerticalScrollIndicator={false}
-        snapToInterval={height - 100}
+        snapToInterval={height}
         snapToAlignment="start"
         decelerationRate="fast"
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         initialScrollIndex={initialIndex >= 0 ? initialIndex : 0}
         getItemLayout={(data, index) => ({
-          length: height - 100,
-          offset: (height - 100) * index,
+          length: height,
+          offset: height * index,
           index,
         })}
       />
@@ -239,7 +301,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   backButton: {
-    padding: 5,
+    padding: 8,
+    marginTop: Platform.OS === 'ios' ? 0 : 5,
+    marginLeft: 5,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   headerTitle: {
     fontSize: 18,
@@ -251,7 +317,7 @@ const styles = StyleSheet.create({
   },
   shortContainer: {
     width,
-    height: height - 100,
+    height: height,
     position: 'relative',
     backgroundColor: '#000',
     overflow: 'hidden',

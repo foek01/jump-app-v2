@@ -66,7 +66,7 @@ export default function VideoPlayer() {
     
     // Method 2: Fallback to a working test URL for debugging
     if (video.id === '21723') {
-      const testUrl = 'https://vvterneuzen.bytomorrow.nl/watch-embed/test023~54be8cfaf2';
+      const testUrl = 'https://vvterneuzen.bytomorrow.nl/watch-embed/test023~54be8cfa12';
       console.log('🧪 Using test URL for debugging:', testUrl);
       return testUrl;
     }
@@ -112,29 +112,41 @@ export default function VideoPlayer() {
     };
   }, [video, videoId, isLive, videos, liveEvents]);
   
+  // Share app download link instead of video thumbnail
   const handleShare = async () => {
-    if (!video) return;
-    console.log('📤 Share pressed for video:', video.title);
     try {
-      if (Platform.OS === 'web') {
-        if (navigator.share) {
-          await navigator.share({
-            title: video.title,
-            text: `Check out this video: ${video.title}`,
-            url: window.location.href,
-          });
-        } else {
-          console.log('📤 Web share not supported');
-        }
-      } else {
-        await RNShare.share({
-          title: video.title,
-          message: `Check out this video: ${video.title}`,
-          url: video.thumbnail,
+      const appDownloadLinks = {
+        ios: 'https://apps.apple.com/app/sport-club-video-platform/id123456789', // Replace with real App Store link
+        android: 'https://play.google.com/store/apps/details?id=com.sportclub.videoplatform', // Replace with real Play Store link
+        web: window.location.origin // Current web app URL
+      };
+      
+      const shareText = `🎬 Bekijk "${video?.title || 'deze video'}" in onze Sport Club Video Platform app!\n\n📱 Download de app:\niOS: ${appDownloadLinks.ios}\nAndroid: ${appDownloadLinks.android}\nWeb: ${appDownloadLinks.web}`;
+      
+      if (navigator.share) {
+        // Use native sharing if available
+        await navigator.share({
+          title: video?.title || 'Sport Club Video',
+          text: shareText,
+          url: appDownloadLinks.web
         });
+      } else {
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(shareText);
+        alert('App download links gekopieerd naar klembord!');
       }
+      
+      console.log('📤 Shared app download links');
     } catch (error) {
-      console.log('📤 Share cancelled or failed:', error);
+      console.error('❌ Share error:', error);
+      // Fallback: copy to clipboard
+      try {
+        const fallbackText = `Bekijk "${video?.title || 'deze video'}" in onze Sport Club Video Platform app! Download via: ${window.location.origin}`;
+        await navigator.clipboard.writeText(fallbackText);
+        alert('App link gekopieerd naar klembord!');
+      } catch (clipboardError) {
+        console.error('❌ Clipboard error:', clipboardError);
+      }
     }
   };
   
@@ -165,6 +177,12 @@ export default function VideoPlayer() {
           <OptimizedVideoPlayer
             videoUrl={video.videoUrl}
             streamUrl={video.streamUrl}
+            media_id={video.media_id}
+            autoplay={true}
+            loop={false}
+            muted={false}
+            controls={true}
+            isShort={false}
             style={{ width: '100%', height: '100%' }}
           />
           
@@ -201,15 +219,7 @@ export default function VideoPlayer() {
           
           <Text style={styles.videoTitle}>{video.title}</Text>
           
-          {/* Stats */}
-          <View style={styles.statsContainer}>
-            <View style={styles.stat}>
-              <Eye color="#999" size={16} />
-              <Text style={styles.statText}>12.3K weergaven</Text>
-            </View>
-            <Text style={styles.statDivider}>•</Text>
-            <Text style={styles.statText}>2 dagen geleden</Text>
-          </View>
+          {/* Stats - Removed test data */}
         </View>
 
         {/* Action Buttons */}
@@ -239,14 +249,14 @@ export default function VideoPlayer() {
         <View style={styles.descriptionContainer}>
           <Text style={styles.descriptionTitle}>Beschrijving</Text>
           <Text style={styles.descriptionText}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
+            {video.description || 'Geen beschrijving beschikbaar'}
           </Text>
         </View>
 
         {/* Related Videos */}
         <View style={styles.relatedContainer}>
           <Text style={styles.relatedTitle}>Gerelateerde video&apos;s</Text>
-          {mockVideos.filter(v => v.id !== videoId).slice(0, 3).map((relatedVideo) => (
+          {videos.filter(v => v.id !== videoId).slice(0, 3).map((relatedVideo) => (
             <TouchableOpacity 
               key={relatedVideo.id}
               style={styles.relatedVideo}
@@ -281,7 +291,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   backButton: {
-    padding: 5,
+    padding: 8,
+    marginTop: Platform.OS === 'ios' ? 0 : 5,
+    marginLeft: 5,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   headerTitle: {
     fontSize: 18,

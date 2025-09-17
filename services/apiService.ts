@@ -146,6 +146,7 @@ export class ApiService {
       description: asset.description || '',
       thumbnail: thumb,
       videoUrl,
+      media_id: asset.media_id,
       duration: typeof asset.duration === 'number' ? asset.duration : undefined,
       date: dateObj.toLocaleDateString('nl-NL'),
       category: tagsArray[0] || 'Video',

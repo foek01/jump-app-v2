@@ -54,6 +54,7 @@ export interface Video {
   description?: string;
   thumbnail: string;
   videoUrl?: string;
+  media_id?: string;
   duration?: number;
   date: string;
   category?: string;
