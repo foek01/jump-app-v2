@@ -15,32 +15,29 @@ import {
 import { Eye, EyeOff } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useAuth } from '@/providers/AuthProvider';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 export default function LoginScreen() {
-  const { login, loginWithSSO, isLoading, error } = useAuth();
+  const { login, isLoading, error } = useAuth();
+  const { language, changeLanguage } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isSSO, setIsSSO] = useState(false);
 
   const handleLogin = async () => {
     if (!email.trim()) {
-      Alert.alert('Fout', 'Voer je emailadres in');
+      Alert.alert(language === 'nl' ? 'Fout' : 'Error', 
+                  language === 'nl' ? 'Voer je emailadres in' : 'Enter your email address');
       return;
     }
 
-    if (!isSSO && !password.trim()) {
-      Alert.alert('Fout', 'Voer je wachtwoord in');
+    if (!password.trim()) {
+      Alert.alert(language === 'nl' ? 'Fout' : 'Error', 
+                  language === 'nl' ? 'Voer je wachtwoord in' : 'Enter your password');
       return;
     }
 
-    let success = false;
-    
-    if (isSSO) {
-      success = await loginWithSSO(email.trim());
-    } else {
-      success = await login(email.trim(), password);
-    }
+    const success = await login(email.trim(), password);
 
     if (success) {
       // Navigate to club selection or home
@@ -51,23 +48,23 @@ export default function LoginScreen() {
   const handleRegister = () => {
     // For now, just show an alert
     Alert.alert(
-      'Registreren',
-      'Registratie functionaliteit komt binnenkort beschikbaar.',
+      language === 'nl' ? 'Registreren' : 'Register',
+      language === 'nl' ? 'Registratie functionaliteit komt binnenkort beschikbaar.' : 'Registration functionality coming soon.',
       [{ text: 'OK' }]
     );
   };
 
   const handleForgotPassword = () => {
     Alert.alert(
-      'Wachtwoord vergeten',
-      'Wachtwoord reset functionaliteit komt binnenkort beschikbaar.',
+      language === 'nl' ? 'Wachtwoord vergeten' : 'Forgot Password',
+      language === 'nl' ? 'Wachtwoord reset functionaliteit komt binnenkort beschikbaar.' : 'Password reset functionality coming soon.',
       [{ text: 'OK' }]
     );
   };
 
-  const toggleSSO = () => {
-    setIsSSO(!isSSO);
-    setPassword(''); // Clear password when switching modes
+  const toggleLanguage = () => {
+    const newLanguage = language === 'nl' ? 'en' : 'nl';
+    changeLanguage(newLanguage);
   };
 
   return (
@@ -78,17 +75,23 @@ export default function LoginScreen() {
       >
         {/* Language/Skip button */}
         <View style={styles.header}>
-          <View style={styles.languageContainer}>
+          <TouchableOpacity style={styles.languageContainer} onPress={toggleLanguage}>
             <Image 
-              source={{ uri: 'https://flagcdn.com/w40/nl.png' }} 
-              style={styles.flag}
+              source={{ uri: language === 'nl' ? 'https://flagcdn.com/w40/nl.png' : 'https://flagcdn.com/w40/gb.png' }} 
+              style={[styles.flag, styles.activeFlag]}
             />
-          </View>
+            <Image 
+              source={{ uri: language === 'nl' ? 'https://flagcdn.com/w40/gb.png' : 'https://flagcdn.com/w40/nl.png' }} 
+              style={[styles.flag, styles.inactiveFlag]}
+            />
+          </TouchableOpacity>
           <TouchableOpacity 
             style={styles.skipButton}
             onPress={() => router.replace('/club-selection')}
           >
-            <Text style={styles.skipText}>Sla over →</Text>
+            <Text style={styles.skipText}>
+              {language === 'nl' ? 'Sla over →' : 'Skip →'}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -105,9 +108,11 @@ export default function LoginScreen() {
 
         {/* Welcome Text */}
         <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeTitle}>Welkom</Text>
+          <Text style={styles.welcomeTitle}>
+            {language === 'nl' ? 'Welkom' : 'Welcome'}
+          </Text>
           <Text style={styles.welcomeSubtitle}>
-            {isSSO ? 'Login met SSO om verder te gaan' : 'Login om verder te gaan'}
+            {language === 'nl' ? 'Login om verder te gaan' : 'Login to continue'}
           </Text>
         </View>
 
@@ -116,7 +121,7 @@ export default function LoginScreen() {
           {/* Email Input */}
           <TextInput
             style={styles.input}
-            placeholder="Emailadres"
+            placeholder={language === 'nl' ? 'Emailadres' : 'Email address'}
             placeholderTextColor="#999"
             value={email}
             onChangeText={setEmail}
@@ -125,41 +130,39 @@ export default function LoginScreen() {
             autoCorrect={false}
           />
 
-          {/* Password Input (only for regular login) */}
-          {!isSSO && (
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Wachtwoord"
-                placeholderTextColor="#999"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff color="#999" size={20} />
-                ) : (
-                  <Eye color="#999" size={20} />
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Forgot Password (only for regular login) */}
-          {!isSSO && (
-            <TouchableOpacity 
-              style={styles.forgotButton}
-              onPress={handleForgotPassword}
+          {/* Password Input */}
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder={language === 'nl' ? 'Wachtwoord' : 'Password'}
+              placeholderTextColor="#999"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity
+              style={styles.eyeButton}
+              onPress={() => setShowPassword(!showPassword)}
             >
-              <Text style={styles.forgotText}>Wachtwoord vergeten?</Text>
+              {showPassword ? (
+                <EyeOff color="#999" size={20} />
+              ) : (
+                <Eye color="#999" size={20} />
+              )}
             </TouchableOpacity>
-          )}
+          </View>
+
+          {/* Forgot Password */}
+          <TouchableOpacity 
+            style={styles.forgotButton}
+            onPress={handleForgotPassword}
+          >
+            <Text style={styles.forgotText}>
+              {language === 'nl' ? 'Wachtwoord vergeten?' : 'Forgot password?'}
+            </Text>
+          </TouchableOpacity>
 
           {/* Error Message */}
           {error && (
@@ -177,23 +180,15 @@ export default function LoginScreen() {
             {isLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color="#000" />
-                <Text style={styles.loginButtonText}>Bezig...</Text>
+                <Text style={styles.loginButtonText}>
+                  {language === 'nl' ? 'Bezig...' : 'Loading...'}
+                </Text>
               </View>
             ) : (
               <Text style={styles.loginButtonText}>
-                {isSSO ? 'LOGIN MET SSO' : 'LOG IN'}
+                {language === 'nl' ? 'LOG IN' : 'LOG IN'}
               </Text>
             )}
-          </TouchableOpacity>
-
-          {/* SSO Toggle */}
-          <TouchableOpacity
-            style={styles.ssoToggle}
-            onPress={toggleSSO}
-          >
-            <Text style={styles.ssoToggleText}>
-              {isSSO ? 'Reguliere login gebruiken' : 'SSO login gebruiken'}
-            </Text>
           </TouchableOpacity>
 
           {/* Register Button */}
@@ -201,7 +196,9 @@ export default function LoginScreen() {
             style={styles.registerButton}
             onPress={handleRegister}
           >
-            <Text style={styles.registerButtonText}>REGISTREER</Text>
+            <Text style={styles.registerButtonText}>
+              {language === 'nl' ? 'REGISTREER' : 'REGISTER'}
+            </Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -227,11 +224,23 @@ const styles = StyleSheet.create({
   languageContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   flag: {
     width: 30,
     height: 20,
     borderRadius: 4,
+    marginHorizontal: 2,
+  },
+  activeFlag: {
+    opacity: 1,
+    borderWidth: 2,
+    borderColor: '#C4FF00',
+  },
+  inactiveFlag: {
+    opacity: 0.5,
   },
   skipButton: {
     padding: 10,
@@ -338,15 +347,6 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  ssoToggle: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  ssoToggleText: {
-    color: '#C4FF00',
-    fontSize: 14,
-    textDecorationLine: 'underline',
   },
   registerButton: {
     borderColor: '#C4FF00',

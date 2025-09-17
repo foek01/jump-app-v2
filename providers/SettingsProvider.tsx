@@ -5,16 +5,14 @@ import createContextHook from "@nkzw/create-context-hook";
 interface SettingsState {
   showNews: boolean;
   pushNotifications: boolean;
-  matchReminders: boolean;
   newsAlerts: boolean;
   startscreenClubId: string | null;
   enableCache: boolean;
 }
 
 const DEFAULT_SETTINGS: SettingsState = {
-  showNews: true,
+  showNews: false, // News disabled by default - users can enable manually
   pushNotifications: true,
-  matchReminders: true,
   newsAlerts: false,
   startscreenClubId: null,
   enableCache: false, // Cache disabled by default for development

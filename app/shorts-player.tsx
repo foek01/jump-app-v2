@@ -19,6 +19,7 @@ import { useFavorites } from '@/providers/FavoritesProvider';
 import { OptimizedVideoPlayer } from '@/components/OptimizedVideoPlayer';
 
 const { width, height } = Dimensions.get('window');
+const screenHeight = height;
 
 interface Short {
   id: string;
@@ -152,8 +153,6 @@ export default function ShortsPlayer() {
         }}
       />
       
-      {/* Video overlay gradient */}
-      <View style={styles.overlay} />
       
       {/* Side actions */}
       <View style={styles.sideActions}>
@@ -166,7 +165,6 @@ export default function ShortsPlayer() {
             fill={isShortLiked(item.id) ? "#FF3040" : "transparent"}
             size={28} 
           />
-          <Text style={styles.actionText}>12.3K</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
@@ -195,7 +193,7 @@ export default function ShortsPlayer() {
       // Auto-play when swiping to new video
       console.log('🎬 Swiped to short:', newIndex, currentItem?.title);
       
-      // Pause all videos first, then play the current one
+      // Better video control - pause all first, then play current
       setTimeout(() => {
         if (Platform.OS === 'web') {
           // Find all video elements in iframes and direct videos
@@ -204,41 +202,52 @@ export default function ShortsPlayer() {
           
           console.log(`🎬 Found ${videos.length} videos and ${iframes.length} iframes`);
           
-          // Handle direct video elements
+          // FIRST: Pause and mute ALL videos
           videos.forEach((video, index) => {
-            if (index === newIndex) {
-              video.currentTime = 0;
-              video.muted = true;
-              video.loop = true;
-              video.play().catch(e => console.log('Autoplay prevented:', e));
-              console.log('▶️ Playing direct video at index:', index);
-            } else {
-              video.pause();
-              console.log('⏸️ Paused direct video at index:', index);
-            }
+            video.pause();
+            video.muted = true;
+            video.currentTime = 0;
+            console.log('⏸️🔇 Stopped and muted video at index:', index);
           });
           
-          // Handle iframe videos (JW Player)
+          // FIRST: Pause all iframe videos
           iframes.forEach((iframe, index) => {
             try {
               const iframeWindow = iframe.contentWindow;
               if (iframeWindow) {
-                if (index === newIndex) {
-                  // Send play command to iframe
-                  iframeWindow.postMessage({action: 'play'}, '*');
-                  console.log('▶️ Playing iframe video at index:', index);
-                } else {
-                  // Send pause command to iframe
-                  iframeWindow.postMessage({action: 'pause'}, '*');
-                  console.log('⏸️ Paused iframe video at index:', index);
-                }
+                iframeWindow.postMessage({action: 'pause'}, '*');
+                iframeWindow.postMessage({action: 'mute'}, '*');
+                console.log('⏸️🔇 Stopped and muted iframe at index:', index);
               }
             } catch (e) {
               console.log('Cannot control iframe video:', e);
             }
           });
+          
+          // THEN: Play only the current video
+          setTimeout(() => {
+            if (videos[newIndex]) {
+              videos[newIndex].currentTime = 0;
+              videos[newIndex].muted = true;
+              videos[newIndex].loop = true;
+              videos[newIndex].play().catch(e => console.log('Autoplay prevented:', e));
+              console.log('▶️ Playing direct video at index:', newIndex);
+            }
+            
+            if (iframes[newIndex]) {
+              try {
+                const iframeWindow = iframes[newIndex].contentWindow;
+                if (iframeWindow) {
+                  iframeWindow.postMessage({action: 'play'}, '*');
+                  console.log('▶️ Playing iframe video at index:', newIndex);
+                }
+              } catch (e) {
+                console.log('Cannot control iframe video:', e);
+              }
+            }
+          }, 100);
         }
-      }, 200);
+      }, 100);
     }
   }).current;
 
@@ -247,18 +256,9 @@ export default function ShortsPlayer() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
       
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <ArrowLeft color="#FFF" size={24} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Shorts</Text>
-        <View style={styles.spacer} />
-      </View>
-
       <FlatList
         ref={flatListRef}
         data={mockShorts}
@@ -266,19 +266,28 @@ export default function ShortsPlayer() {
         keyExtractor={(item) => item.id}
         pagingEnabled
         showsVerticalScrollIndicator={false}
-        snapToInterval={height}
+        snapToInterval={screenHeight}
         snapToAlignment="start"
         decelerationRate="fast"
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         initialScrollIndex={initialIndex >= 0 ? initialIndex : 0}
         getItemLayout={(data, index) => ({
-          length: height,
-          offset: height * index,
+          length: screenHeight,
+          offset: screenHeight * index,
           index,
         })}
       />
-    </SafeAreaView>
+      
+      {/* Header overlay */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+          <ArrowLeft color="#FFF" size={24} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Shorts</Text>
+        <View style={styles.spacer} />
+      </View>
+    </View>
   );
 }
 
@@ -292,13 +301,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingBottom: 15,
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   backButton: {
     padding: 8,
@@ -317,7 +327,7 @@ const styles = StyleSheet.create({
   },
   shortContainer: {
     width,
-    height: height,
+    height: screenHeight,
     position: 'relative',
     backgroundColor: '#000',
     overflow: 'hidden',
@@ -326,14 +336,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: '#333',
-  },
-  overlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 200,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   sideActions: {
     position: 'absolute',
@@ -362,9 +364,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 5,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   date: {
     color: '#CCC',
     fontSize: 14,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
 });

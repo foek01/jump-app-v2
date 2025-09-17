@@ -31,8 +31,6 @@ interface Translations {
   notifications: string;
   pushNotifications: string;
   pushNotificationsDescription: string;
-  matchReminders: string;
-  matchRemindersDescription: string;
   newsAlerts: string;
   newsAlertsDescription: string;
   language: string;
@@ -98,8 +96,6 @@ const translations: Record<Language, Translations> = {
     notifications: "Notificaties",
     pushNotifications: "Push Notificaties",
     pushNotificationsDescription: "Ontvang meldingen op je apparaat",
-    matchReminders: "Wedstrijd Herinneringen",
-    matchRemindersDescription: "30 minuten voor aanvang",
     newsAlerts: "Nieuws Alerts",
     newsAlertsDescription: "Bij belangrijk nieuws",
     language: "Taal",
@@ -163,8 +159,6 @@ const translations: Record<Language, Translations> = {
     notifications: "Notifications",
     pushNotifications: "Push Notifications",
     pushNotificationsDescription: "Receive notifications on your device",
-    matchReminders: "Match Reminders",
-    matchRemindersDescription: "30 minutes before start",
     newsAlerts: "News Alerts",
     newsAlertsDescription: "For important news",
     language: "Language",

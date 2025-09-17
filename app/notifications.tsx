@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { router } from "expo-router";
 import { ChevronLeft, Bell, BellOff, TestTube, Settings, Trash2 } from "lucide-react-native";
 import { notificationService } from "@/services/notificationService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from 'expo-notifications';
 
 interface Notification {
   id: string;
@@ -13,68 +15,93 @@ interface Notification {
   type: 'match' | 'news' | 'general' | 'text';
 }
 
-const mockNotifications: Notification[] = [
-  {
-    id: "1",
-    title: "Ajax - PSV",
-    message: "De wedstrijd begint over 30 minuten!",
-    timestamp: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
-    read: false,
-    type: 'match',
-  },
-  {
-    id: "2",
-    title: "Nieuw artikel",
-    message: "Ajax wint met 3-1 van Feyenoord",
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    read: false,
-    type: 'news',
-  },
-  {
-    id: "3",
-    title: "Live stream beschikbaar",
-    message: "De wedstrijd Ajax - AZ is nu live",
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-    read: true,
-    type: 'general',
-  },
-  {
-    id: "4",
-    title: "Transfer nieuws",
-    message: "Ajax haalt nieuwe spits binnen",
-    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    read: true,
-    type: 'news',
-  },
-  {
-    id: "5",
-    title: "Wedstrijd update",
-    message: "Ajax - Utrecht is uitgesteld",
-    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-    read: true,
-    type: 'general',
-  },
-  {
-    id: "6",
-    title: "Tekstbericht",
-    message: "Welkom bij de Ajax app! Hier vind je alle laatste nieuws en wedstrijden.",
-    timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
-    read: true,
-    type: 'text',
-  },
-  {
-    id: "7",
-    title: "Belangrijk bericht",
-    message: "De training van morgen is verplaatst naar 16:00 uur vanwege het weer.",
-    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-    read: false,
-    type: 'text',
-  },
-];
+// Real notifications will be loaded from AsyncStorage and notification listeners
+
+const NOTIFICATIONS_STORAGE_KEY = "@app_notifications";
 
 export default function NotificationsScreen() {
   const [isTestingNotification, setIsTestingNotification] = useState<boolean>(false);
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Load notifications from AsyncStorage
+  useEffect(() => {
+    loadNotifications();
+    setupNotificationListeners();
+  }, []);
+
+  const loadNotifications = async (): Promise<void> => {
+    try {
+      const stored = await AsyncStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+      if (stored) {
+        const parsedNotifications = JSON.parse(stored).map((n: any) => ({
+          ...n,
+          timestamp: new Date(n.timestamp)
+        }));
+        setNotifications(parsedNotifications);
+      }
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveNotifications = async (notifs: Notification[]): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifs));
+    } catch (error) {
+      console.error('Error saving notifications:', error);
+    }
+  };
+
+  const addNotification = async (notification: Omit<Notification, 'id'>): Promise<void> => {
+    const newNotification: Notification = {
+      ...notification,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+    };
+    
+    const updatedNotifications = [newNotification, ...notifications];
+    setNotifications(updatedNotifications);
+    await saveNotifications(updatedNotifications);
+  };
+
+  const setupNotificationListeners = (): void => {
+    console.log('🔔 Setting up notification listeners...');
+    
+    // Listen for notifications received while app is in foreground
+    const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
+      console.log('📱 Notification received in foreground:', notification);
+      
+      const { title, body, data } = notification.request.content;
+      addNotification({
+        title: title || 'Nieuwe melding',
+        message: body || '',
+        timestamp: new Date(),
+        read: false,
+        type: (data?.type as 'match' | 'news' | 'general' | 'text') || 'general'
+      });
+    });
+
+    // Listen for notification responses (when user taps notification)
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('📱 Notification tapped:', response);
+      
+      const { title, body, data } = response.notification.request.content;
+      addNotification({
+        title: title || 'Nieuwe melding',
+        message: body || '',
+        timestamp: new Date(),
+        read: false,
+        type: (data?.type as 'match' | 'news' | 'general' | 'text') || 'general'
+      });
+    });
+
+    return () => {
+      foregroundSubscription.remove();
+      responseSubscription.remove();
+    };
+  };
 
   const formatTimestamp = (timestamp: Date): string => {
     const now = new Date();
@@ -119,20 +146,22 @@ export default function NotificationsScreen() {
         {
           text: 'Verwijderen',
           style: 'destructive',
-          onPress: () => {
-            setNotifications(prev => prev.filter(n => n.id !== notificationId));
+          onPress: async () => {
+            const updatedNotifications = notifications.filter(n => n.id !== notificationId);
+            setNotifications(updatedNotifications);
+            await saveNotifications(updatedNotifications);
           },
         },
       ]
     );
   };
 
-  const handleMarkAsRead = (notificationId: string): void => {
-    setNotifications(prev => 
-      prev.map(n => 
-        n.id === notificationId ? { ...n, read: true } : n
-      )
+  const handleMarkAsRead = async (notificationId: string): Promise<void> => {
+    const updatedNotifications = notifications.map(n => 
+      n.id === notificationId ? { ...n, read: true } : n
     );
+    setNotifications(updatedNotifications);
+    await saveNotifications(updatedNotifications);
   };
 
   const handleTestNotification = async (): Promise<void> => {
@@ -201,10 +230,17 @@ export default function NotificationsScreen() {
         <View style={styles.divider} />
         
         <Text style={styles.sectionTitle}>Ontvangen Berichten</Text>
-        {notifications.length === 0 ? (
+        {isLoading ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>Berichten laden...</Text>
+          </View>
+        ) : notifications.length === 0 ? (
           <View style={styles.emptyState}>
             <BellOff color="#666" size={48} />
             <Text style={styles.emptyText}>Geen notificaties</Text>
+            <Text style={styles.emptySubtext}>
+              Push notificaties verschijnen hier automatisch
+            </Text>
           </View>
         ) : (
           notifications.map((notification) => (
@@ -332,6 +368,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: "#555",
+    marginTop: 8,
+    textAlign: "center",
   },
   testSection: {
     padding: 20,

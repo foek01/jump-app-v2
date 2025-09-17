@@ -147,7 +147,10 @@ export default function SettingsScreen() {
               <View style={styles.settingInfo}>
                 <Text style={styles.settingLabel}>{t.showNews}</Text>
                 <Text style={styles.settingDescription}>
-                  {settings.showNews ? t.showNewsDescription : t.showNewsDescription.replace("zichtbaar", "verborgen").replace("visible", "hidden")}
+                  {settings.showNews 
+                    ? (language === 'nl' ? 'Nieuws tab is zichtbaar' : 'News tab is visible')
+                    : (language === 'nl' ? 'Nieuws tab is verborgen' : 'News tab is hidden')
+                  }
                 </Text>
               </View>
             </View>
@@ -180,21 +183,6 @@ export default function SettingsScreen() {
             />
           </View>
 
-          <View style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>{t.matchReminders}</Text>
-                <Text style={styles.settingDescription}>{t.matchRemindersDescription}</Text>
-              </View>
-            </View>
-            <Switch
-              value={settings.matchReminders}
-              onValueChange={(value) => updateSetting('matchReminders', value)}
-              trackColor={{ false: "#333", true: "#C4FF00" }}
-              thumbColor="#FFF"
-              disabled={!settings.pushNotifications}
-            />
-          </View>
 
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>

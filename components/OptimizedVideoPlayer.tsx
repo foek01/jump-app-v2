@@ -89,13 +89,15 @@ export const OptimizedVideoPlayer: React.FC<OptimizedVideoPlayerProps> = ({
       
       // Add parameters to show only the video player, not the full website
       optimizedParams.set('minimal', '1');        // Minimal UI
-      optimizedParams.set('nofullscreen', '1');   // No fullscreen button
       optimizedParams.set('noshare', '1');        // No share button
       optimizedParams.set('nocomments', '1');     // No comments
       optimizedParams.set('norelated', '1');      // No related videos
       optimizedParams.set('nologo', '1');         // No logo overlay
       optimizedParams.set('playeronly', '1');     // Player only mode
       optimizedParams.set('embed', '1');          // Embed mode
+      optimizedParams.set('casting', '1');        // Enable casting/AirPlay
+      optimizedParams.set('airplay', '1');        // Enable AirPlay
+      optimizedParams.set('chromecast', '1');     // Enable Chromecast
       
       // Add media_id for JW Player custom design
       if (media_id) {
@@ -198,7 +200,7 @@ export const OptimizedVideoPlayer: React.FC<OptimizedVideoPlayerProps> = ({
             borderRadius: '8px',
             objectFit: 'cover',
           }}
-          allow="autoplay; fullscreen; encrypted-media; accelerometer; gyroscope; picture-in-picture; web-share"
+          allow="autoplay; fullscreen; encrypted-media; accelerometer; gyroscope; picture-in-picture; web-share; display-capture; camera; microphone"
           allowFullScreen
           title="JW Video Player"
           frameBorder="0"
@@ -264,13 +266,73 @@ export const OptimizedVideoPlayer: React.FC<OptimizedVideoPlayerProps> = ({
         allowsBackForwardNavigationGestures={false}
         // Inject JavaScript for better video control and hide website elements
         injectedJavaScript={isShort ? `
+          // Enhanced message listener for better video control
+          window.addEventListener('message', function(event) {
+            const videos = document.querySelectorAll('video');
+            const jwPlayer = document.querySelector('.jw-wrapper, .jw-media, .jwplayer, [id*="jwplayer"]');
+            
+            switch(event.data.action) {
+              case 'play':
+                videos.forEach(video => {
+                  video.play().catch(e => console.log('Play prevented:', e));
+                });
+                if (jwPlayer && jwPlayer.play) jwPlayer.play();
+                break;
+              case 'pause':
+                videos.forEach(video => {
+                  video.pause();
+                });
+                if (jwPlayer && jwPlayer.pause) jwPlayer.pause();
+                break;
+              case 'mute':
+                videos.forEach(video => {
+                  video.muted = true;
+                });
+                if (jwPlayer && jwPlayer.mute) jwPlayer.mute();
+                break;
+              case 'unmute':
+                videos.forEach(video => {
+                  video.muted = false;
+                });
+                if (jwPlayer && jwPlayer.unmute) jwPlayer.unmute();
+                break;
+              case 'stop':
+                videos.forEach(video => {
+                  video.pause();
+                  video.currentTime = 0;
+                  video.muted = true;
+                });
+                if (jwPlayer && jwPlayer.stop) jwPlayer.stop();
+                break;
+              case 'loop':
+                videos.forEach(video => {
+                  video.loop = true;
+                });
+                break;
+            }
+          });
+          
           // Hide website elements and show only JW Player for shorts
           setTimeout(() => {
-            // Hide navigation, headers, footers, etc.
-            const elementsToHide = ['nav', 'header', 'footer', '.navbar', '.menu', '.sidebar', '.comments', '.related'];
+            // Remove TEST div and other unwanted elements
+            const elementsToHide = [
+              'nav', 'header', 'footer', '.navbar', '.menu', '.sidebar', 
+              '.comments', '.related', '.css-view-g5y9jx', 
+              '[class*="css-view"]', '[class*="TEST"]',
+              'div:contains("TEST")', '.test-element'
+            ];
             elementsToHide.forEach(selector => {
               const elements = document.querySelectorAll(selector);
               elements.forEach(el => el.style.display = 'none');
+            });
+            
+            // Remove TEST divs specifically
+            const testDivs = document.querySelectorAll('div');
+            testDivs.forEach(div => {
+              if (div.textContent && div.textContent.trim() === 'TEST') {
+                div.style.display = 'none';
+                console.log('🗑️ Removed TEST div:', div);
+              }
             });
             
             // Focus on JW Player container
@@ -285,28 +347,96 @@ export const OptimizedVideoPlayer: React.FC<OptimizedVideoPlayerProps> = ({
               jwPlayer.style.backgroundColor = '#000';
             }
             
-            // Auto-loop and mute for shorts
+            // Auto-loop and mute for shorts + Enable casting
             const videos = document.querySelectorAll('video');
             videos.forEach(video => {
               video.loop = true;
               video.muted = true;
               video.autoplay = true;
               video.playsInline = true;
+              // Enable casting/AirPlay
+              video.setAttribute('x-webkit-airplay', 'allow');
+              video.setAttribute('webkit-playsinline', 'false');
               video.addEventListener('ended', () => {
                 video.currentTime = 0;
                 video.play();
               });
             });
+            
+            // Enable JW Player casting if available
+            if (window.jwplayer && window.jwplayer.getPlayers) {
+              const players = window.jwplayer.getPlayers();
+              players.forEach(player => {
+                if (player.setCasting) {
+                  player.setCasting(true);
+                  console.log('📺 Casting enabled for JW Player');
+                }
+              });
+            }
           }, 1000);
           true;
         ` : `
+          // Enhanced message listener for regular videos
+          window.addEventListener('message', function(event) {
+            const videos = document.querySelectorAll('video');
+            const jwPlayer = document.querySelector('.jw-wrapper, .jw-media, .jwplayer, [id*="jwplayer"]');
+            
+            switch(event.data.action) {
+              case 'play':
+                videos.forEach(video => {
+                  video.play().catch(e => console.log('Play prevented:', e));
+                });
+                if (jwPlayer && jwPlayer.play) jwPlayer.play();
+                break;
+              case 'pause':
+                videos.forEach(video => {
+                  video.pause();
+                });
+                if (jwPlayer && jwPlayer.pause) jwPlayer.pause();
+                break;
+              case 'mute':
+                videos.forEach(video => {
+                  video.muted = true;
+                });
+                if (jwPlayer && jwPlayer.mute) jwPlayer.mute();
+                break;
+              case 'unmute':
+                videos.forEach(video => {
+                  video.muted = false;
+                });
+                if (jwPlayer && jwPlayer.unmute) jwPlayer.unmute();
+                break;
+              case 'stop':
+                videos.forEach(video => {
+                  video.pause();
+                  video.currentTime = 0;
+                });
+                if (jwPlayer && jwPlayer.stop) jwPlayer.stop();
+                break;
+            }
+          });
+          
           // Hide website elements and show only JW Player for regular videos
           setTimeout(() => {
-            // Hide navigation, headers, footers, etc.
-            const elementsToHide = ['nav', 'header', 'footer', '.navbar', '.menu', '.sidebar', '.comments', '.related'];
+            // Remove TEST div and other unwanted elements
+            const elementsToHide = [
+              'nav', 'header', 'footer', '.navbar', '.menu', '.sidebar', 
+              '.comments', '.related', '.css-view-g5y9jx',
+              '[class*="css-view"]', '[class*="TEST"]',
+              'div:contains("TEST")', '.test-element'
+            ];
             elementsToHide.forEach(selector => {
               const elements = document.querySelectorAll(selector);
               elements.forEach(el => el.style.display = 'none');
+            });
+            
+            // Remove TEST divs specifically
+            const testDivs = document.querySelectorAll('div');
+            testDivs.forEach(div => {
+              if (div.textContent && div.textContent.trim() === 'TEST') {
+                div.style.display = 'none';
+                console.log('🗑️ Removed TEST div:', div);
+              }
             });
             
             // Focus on JW Player container
@@ -321,14 +451,28 @@ export const OptimizedVideoPlayer: React.FC<OptimizedVideoPlayerProps> = ({
               jwPlayer.style.backgroundColor = '#000';
             }
             
-            // Standard video settings
+            // Standard video settings + Enable casting
             const videos = document.querySelectorAll('video');
             videos.forEach(video => {
               video.autoplay = ${autoplay};
               video.loop = ${loop};
               video.muted = ${muted};
               video.playsInline = true;
+              // Enable casting/AirPlay
+              video.setAttribute('x-webkit-airplay', 'allow');
+              video.setAttribute('webkit-playsinline', 'false');
             });
+            
+            // Enable JW Player casting if available
+            if (window.jwplayer && window.jwplayer.getPlayers) {
+              const players = window.jwplayer.getPlayers();
+              players.forEach(player => {
+                if (player.setCasting) {
+                  player.setCasting(true);
+                  console.log('📺 Casting enabled for JW Player');
+                }
+              });
+            }
           }, 1000);
           true;
         `}
