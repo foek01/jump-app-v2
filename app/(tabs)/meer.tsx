@@ -65,11 +65,6 @@ export default function MeerScreen() {
       onPress: () => router.push("/clubs-manage"),
     },
     {
-      icon: Bell,
-      title: "Notificaties",
-      onPress: () => router.push("/notifications"),
-    },
-    {
       icon: Settings,
       title: "Instellingen",
       onPress: () => router.push("/settings"),

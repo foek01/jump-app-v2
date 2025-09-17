@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sport Club Video Platform Clone v3",
     "slug": "sport-club-video-platform-1qmc3tpg-388jzzp9",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.foeks01.jumpsportclubvideoplatform",
-      "buildNumber": "4",
+      "buildNumber": "5",
       "deploymentTarget": "13.4",
       "newArchEnabled": false,
       "infoPlist": {
@@ -47,7 +47,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "eda872b9-6d27-44ed-9ef1-1c29701a8011"
+        "projectId": "1afb9747-6fbd-476e-846d-4a3ad39c97b9"
       }
     }
   }
