@@ -1,6 +1,7 @@
-import { initializeApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
-import { getMessaging, Messaging } from 'firebase/messaging';
+// Firebase imports disabled for iOS build
+// import { initializeApp, FirebaseApp } from 'firebase/app';
+// import { getFirestore, Firestore } from 'firebase/firestore';
+// import { getMessaging, Messaging } from 'firebase/messaging';
 import { Platform } from 'react-native';
 
 // Firebase configuration - Replace with your actual Firebase project settings
@@ -62,5 +63,8 @@ try {
   console.log('Falling back to mock data');
 }
 
-export { db, messaging, isFirebaseConfigured };
-export default app;
+// Firebase exports disabled for iOS build
+export const db = null;
+export const messaging = null;
+export const isFirebaseConfigured = false;
+export default null;
