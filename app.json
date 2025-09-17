@@ -20,14 +20,18 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "entitlements": {}
+      "entitlements": {},
+      "deploymentTarget": "13.0"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.foeks01.jumpsportclubvideoplatform"
+      "package": "com.foeks01.jumpsportclubvideoplatform",
+      "compileSdkVersion": 34,
+      "targetSdkVersion": 34,
+      "minSdkVersion": 21
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
