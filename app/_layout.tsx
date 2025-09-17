@@ -11,7 +11,6 @@ import { VideoProvider } from "@/providers/VideoProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 
 import { LanguageProvider } from "@/providers/LanguageProvider";
-import { initializeNotifications } from "@/services/notificationService";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -42,9 +41,6 @@ export default function RootLayout() {
     setTimeout(() => {
       SplashScreen.hideAsync();
     }, 100);
-    
-    // Initialize notifications
-    initializeNotifications();
   }, []);
 
   return (

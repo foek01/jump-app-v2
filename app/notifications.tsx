@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { router } from "expo-router";
 import { ChevronLeft, Bell, BellOff, TestTube, Settings, Trash2 } from "lucide-react-native";
-import { notificationService } from "@/services/notificationService";
+// import { notificationService } from "@/services/notificationService"; // Disabled
 import AsyncStorage from "@react-native-async-storage/async-storage";
 // import * as Notifications from 'expo-notifications'; // Temporarily disabled
 
@@ -167,8 +167,8 @@ export default function NotificationsScreen() {
   const handleTestNotification = async (): Promise<void> => {
     try {
       setIsTestingNotification(true);
-      await notificationService.sendTestNotification();
-      Alert.alert('Succes', 'Test notificatie verzonden!');
+      // await notificationService.sendTestNotification(); // Disabled
+      Alert.alert('Info', 'Test notificaties zijn uitgeschakeld voor iOS build');
     } catch (error) {
       console.error('Error sending test notification:', error);
       Alert.alert('Fout', 'Kon test notificatie niet verzenden');
@@ -179,13 +179,13 @@ export default function NotificationsScreen() {
 
   const handleRequestPermissions = async (): Promise<void> => {
     try {
-      const granted = await notificationService.requestPermissions();
-      if (granted) {
-        Alert.alert('Succes', 'Notificatie permissies toegestaan!');
-        await notificationService.getDeviceToken();
-      } else {
-        Alert.alert('Geweigerd', 'Notificatie permissies zijn geweigerd');
-      }
+      // const granted = await notificationService.requestPermissions(); // Disabled
+      // if (granted) {
+        Alert.alert('Info', 'Notificatie permissies zijn uitgeschakeld voor iOS build');
+        // await notificationService.getDeviceToken(); // Disabled
+      // } else {
+      //   Alert.alert('Geweigerd', 'Notificatie permissies zijn geweigerd');
+      // }
     } catch (error) {
       console.error('Error requesting permissions:', error);
       Alert.alert('Fout', 'Kon permissies niet aanvragen');
